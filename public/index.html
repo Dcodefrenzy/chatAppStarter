@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./bootstrap/css/bootstrap.css"/>
+    <title>Document</title>
+</head>
+<body>
+    <div class="container-fluid">
+      <div class="container">
+        <div class="row">
+          <div class="col-12">
+            <div class="card bg-warning">
+              <div class="card-body">
+                <i id="typ"></i>
+                  <ul id="messages" class="text-white"> 
+                    <li class="nav-link"> Message</li>
+                  </ul>
+                  <form action="">
+                    <div class="form-group">
+                       <input id="m" autocomplete="off"  class="form-control"/><button class="btn btn-lg btn-success">Send</button>
+                    </div>
+                   </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+  $(function () {
+    var socket = io();
+    const nickname = prompt("Enter a nick name");
+    if(nickname) {
+      socket.emit("joined", nickname);
+    }
+    socket.on("joined", function(msg){
+      $('#messages').append($('<li>').text(msg));
+    })
+
+    $('#m').keyup(function(e){
+      e.preventDefault();
+      const msg = nickname+" is typing";
+      socket.emit("typing", msg);
+    })
+    socket.on("typing", function(msg){
+      console.log(msg)
+      $('#typ').html(msg);
+    }) 
+
+    $('form').submit(function(e){
+      e.preventDefault(); // prevents page reloading
+      const msg =nickname+": " +$('#m').val();
+      socket.emit('chat message',msg);
+      socket.emit("stop typing", msg);
+      $('#m').val('');
+      return false;
+    });
+
+    socket.on("connection", function(msg){
+      $('#messages').append($('<li>').text(msg));
+    })
+    socket.on('chat message', function(msg){
+      $('#messages').append($('<li>').text(msg));
+    });
+
+        
+    socket.on("stop typing", function(msg){
+    $('#typ').html("");
+  });
+
+
+  });
+</script>
+</html>
