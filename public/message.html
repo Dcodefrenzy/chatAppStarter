@@ -17,8 +17,7 @@
                                 <h3 id="username" class="text-center"></h3>
                             <div class="row">
                                 <div class="col-md-6">
-                                        <i id="refresh">Click on a user to send a chat</i>
-                                        <p id="msg"></p>
+                                        <i>You are in a chat with:</i>
                                     <div id="online">
                                         
                                     </div>
@@ -47,7 +46,6 @@
     $(function(){
         var socket = io();
         const session = JSON.parse(sessionStorage.getItem("user"));
-      
         $(document).ready(()=>{
             socket.emit("users", session._id);
             $("#username").html(session.nickname)
@@ -63,64 +61,31 @@
                p.id = user.sessionId;
                p.className = user._id
                p.textContent = user.nickname;
-               p.onclick = function(){chatWith(this.id, this.className, this.textContent)}
+               p.onclick = function(){chatWith(this.id, this.className)}
                return p;
             })
             $('#online').html(user); 
         })
-        function chatWith(sessionId, id, nick){
-            const to = {sessionId:sessionId, _id:id, nickname:nick}
+        function chatWith(sessionId, id){
+            const to = {sessionId:sessionId, _id:id}
             const from  = {sessionId:session.sessionId, _id:session._id, nickname:session.nickname}
-            const p = document.createElement("p");
-               p.id = sessionId;
-               p.className = id
-               p.textContent = nick;
-              // p.onclick = function(){chatWith(this.id, this.className)}
-            $('#online').html(p);
+            console.log(to.sessionId)
             socket.emit("create room", from, to)
+
+            $('form').submit(function(e){
+            e.preventDefault(); // prevents page reloading
+            
+            socket.emit('chat message', from,  to,  $('#m').val());
+            $('#m').val('');
+            return false;
+    });
         }
-
-        socket.on("create room", (from,to, data)=>{
-            const i = document.createElement("i");
-            i.textContent = from.nickname +" "+data;
-            i.id = from.sessionId;
-            i.className=from._id
-            i.style.color = "blue";
-             i.onclick = function(){joinChat(this.id, this.className, from.nickname)}
-           const u =  document.getElementById('msg').appendChild(i);
+        socket.on("create room", data=>{
+            $('#messages').append($('<li>').text(data));
         })
-
-        const joinChat = (sessionId, id, nick)=>{
-            const to = {sessionId:sessionId, _id:id, nickname:nick}
-            const from  = {sessionId:session.sessionId, _id:session._id, nickname:session.nickname}
-            const p = document.createElement("p");
-               p.id = sessionId;
-               p.className = id
-               p.textContent = nick;
-               $('#online').html(p);
-            socket.emit("join room", from, to)
-        }
-        socket.on("store room", room=>{
-            localStorage.setItem("room", JSON.stringify(room));
-            console.log(room)
-        });
-        socket.on("join room", (from, to, data)=>{
-            console.log(data);
-        })
-
-        $('form').submit(function(e){
-                e.preventDefault(); // prevents page reloading 
-                const local= JSON.parse(localStorage.getItem("room"))
-                const room = local._id;
-                const from  = {sessionId:session.sessionId, _id:session._id, nickname:session.nickname}
-                socket.emit('chat message', room, from, $('#m').val());
-                $('#m').val('');
-                return false;
-            });
-
 
         socket.on("chat message", (nick, data)=>{
-            $('#messages').append($('<li>').text(nick.nickname+": "+data));
+            $('#messages').append($('<li>').text(nick+": "+data));
         })
 
 
